@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>e-freight</title>
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#101a33">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="e-freight"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/ef.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+.review{border:1.5px dashed var(--blue);border-radius:12px;padding:12px 16px;margin-top:14px}
+.review table{width:100%;border-collapse:collapse;font-size:15px}.review td{padding:5px 0;border-bottom:1px solid var(--line)}.review td:first-child{color:var(--mut);width:42%}
+.awb{background:var(--soft);border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;margin-top:16px}
+.awb input{font-size:22px;font-weight:700;color:var(--blue);border:0;background:transparent;padding:2px 0;min-height:0;letter-spacing:.02em}
+.awb .lbl{font-weight:600;color:var(--mut);font-size:14px}
+.check{display:flex;align-items:center;gap:12px;background:var(--soft);border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;color:var(--ink)}
+.check input{width:24px;height:24px;min-height:0;accent-color:var(--ok)}
+.sec{margin-top:24px;border-top:1px solid var(--line)}.sec h3{margin:16px 0 0;font-size:17px;color:var(--ink)}
+.dt{display:flex;gap:8px}.dt input{flex:1}.dt button{width:auto;margin:0;padding:0 16px;min-height:48px}
+.dur{background:var(--soft);border-radius:12px;padding:12px 16px;margin-top:14px;font-weight:700}
+.src{display:inline-block;margin-top:10px;color:var(--blue);cursor:pointer;background:none;border:0;font:inherit;padding:0;text-decoration:underline}
+.gate{max-width:480px;margin:10vh auto;padding:0 16px}
+.mem{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--line);padding:12px 0;flex-wrap:wrap}
+.mem b{display:block}.mem span{color:var(--mut);font-size:14px}
+.code{font-size:30px;font-weight:700;letter-spacing:.2em;color:var(--ink)}
+</style>
+</head>
+<body>
+<header class="bar" id="bar" hidden>
+  <a class="brand" href="/app.html"><i></i>e-freight</a>
+  <span class="co" id="coName"></span>
+  <nav class="tabs" id="tabs">
+    <button data-tab="noa" data-t="tabNoa"></button>
+    <button data-tab="uld" data-t="tabUld"></button>
+    <button data-tab="team" data-t="tabTeam" hidden></button>
+    <button data-tab="settings" data-t="tabSettings"></button>
+    <button data-tab="admin" data-t="tabAdmin" hidden></button>
+  </nav>
+</header>
+
+<!-- gate: no company / pending / inactive -->
+<section class="gate" id="gate" hidden>
+  <a class="brand" style="color:var(--ink)"><i></i>e-freight</a>
+  <p class="banner" id="gateMsg" style="margin-top:20px"></p>
+  <div id="gateJoin" hidden>
+    <label for="gCode" data-t="joinCode"></label><input id="gCode" style="text-transform:uppercase;letter-spacing:.15em">
+    <button class="btn primary" id="gJoin" data-t="joinCompany"></button>
+    <label for="gCompany" data-t="companyName"></label><input id="gCompany">
+    <button class="btn" id="gCreate" data-t="newCompany"></button>
+    <div class="msg err" id="gErr"></div>
+  </div>
+  <button class="btn" id="gLogout" data-t="logout"></button>
+</section>
+
+<main class="wrap" id="main" hidden>
+<!-- ================= NOA ================= -->
+<section id="noaList" data-view="noa">
+  <div class="top"><h1 data-t="noaRegister"></h1><button class="btn" id="repBtn" data-t="dailyReport"></button><button class="btn primary" id="newBtn" data-t="newNoa"></button></div>
+  <div class="live" id="live"></div>
+  <input id="q" data-tp="search" style="margin-bottom:14px" type="search">
+  <div id="rows"></div>
+</section>
+
+<section id="noaDetail" data-view="noa" hidden>
+  <div class="top"><button class="btn" id="backBtn" data-t="back"></button><h1 id="dTitle"></h1></div>
+  <div class="banner" id="otherBanner" hidden><span data-t="changedByOther"></span> <button class="btn small" id="reloadBtn" data-t="reload"></button></div>
+  <div class="card">
+    <div class="hero"><div class="eyebrow" data-t="intake"></div><h2 data-t="uploadTitle"></h2><p data-t="uploadText"></p></div>
+    <div class="body">
+      <label for="file" style="margin-top:0" data-t="pdfOrPhoto"></label>
+      <input id="file" type="file" accept="application/pdf,.pdf,image/*">
+      <button class="btn primary" id="extractBtn" data-t="uploadBtn"></button>
+      <div class="msg" id="exMsg" role="status"></div>
+      <div class="review" id="review" hidden>
+        <b data-t="extracted"></b><table id="revTable"></table>
+        <button class="btn primary" id="applyBtn" data-t="apply"></button><button class="btn" id="discardBtn" data-t="discard"></button>
+      </div>
+      <button class="src" id="srcBtn" hidden data-t="viewSource"></button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="hero"><div class="eyebrow" data-t="whDoc"></div><h2 data-t="noaTitle"></h2><p data-t="noaText"></p><span class="pill" id="pill"></span></div>
+    <div class="body">
+      <label for="f_noa_ref" style="margin-top:0" data-t="fNoaRef"></label><input id="f_noa_ref" data-tp="genOnSave">
+      <div class="awb"><div class="lbl" data-t="fAwb"></div><input id="f_awb" placeholder="000-00000000" inputmode="numeric" aria-label="AWB"></div>
+      <label for="f_flight" data-t="fFlight"></label><input id="f_flight">
+      <label for="f_arrival_date" data-t="fArrival"></label><input id="f_arrival_date" type="date">
+      <div class="two"><div><label for="f_boxes" data-t="fBoxes"></label><input id="f_boxes" type="number" min="0" step="1" inputmode="numeric"></div>
+        <div><label for="f_weight" data-t="fWeight"></label><input id="f_weight" type="number" min="0" step="0.001" inputmode="decimal"></div></div>
+      <div class="two"><div><label for="f_uld" data-t="fUld"></label><input id="f_uld" placeholder="1 / PMC12345KL"></div>
+        <div><label for="f_loose" data-t="fLoose"></label><input id="f_loose" type="number" min="0" step="1" inputmode="numeric"></div></div>
+      <div class="two"><div><label for="f_warehouse" data-t="fWarehouse"></label><input id="f_warehouse" list="dl_wh"></div>
+        <div><label for="f_handler_ref" data-t="fHandlerRef"></label><input id="f_handler_ref"></div></div>
+      <label for="f_driver" data-t="fDriver"></label><select id="f_driver"></select>
+      <label for="f_instructions" data-t="fInstr"></label><textarea id="f_instructions"></textarea>
+      <div class="sec"><h3 data-t="collection"></h3>
+        <label class="check" for="f_collected"><input type="checkbox" id="f_collected"> <span data-t="collected"></span></label>
+        <label for="f_collected_boxes" data-t="boxesCollected"></label><input id="f_collected_boxes" type="number" min="0" step="1" inputmode="numeric">
+        <div class="msg" id="colMsg"></div>
+        <label for="t_handed_over_at" data-t="handedOver"></label>
+        <div class="dt"><input id="t_handed_over_at" type="datetime-local"><button type="button" class="btn" data-now="handed_over_at" data-t="now"></button></div>
+        <label for="t_delivered_at" data-t="delivered"></label>
+        <div class="dt"><input id="t_delivered_at" type="datetime-local"><button type="button" class="btn" data-now="delivered_at" data-t="now"></button></div>
+        <div class="dur" id="dur" hidden></div>
+      </div>
+      <div class="meta" id="meta" hidden><div><b data-t="issued"></b>: <span id="issued"></span></div><div><b data-t="lastUpdated"></b>: <span id="updated"></span></div><div id="colRow" hidden><b data-t="collectedAt"></b>: <span id="colAt"></span></div></div>
+      <button class="btn" id="saveBtn" data-t="save"></button>
+      <button class="btn primary" id="saveDlBtn" data-t="saveDl"></button>
+      <button class="btn" id="dlBtn" data-t="dl"></button>
+      <button class="btn danger" id="delBtn" data-t="del"></button>
+      <div class="msg" id="saveMsg" role="status"></div>
+    </div>
+  </div>
+</section>
+
+<section id="noaReport" data-view="noa" hidden class="wide">
+  <div class="top"><button class="btn" id="repBack" data-t="back"></button><h1 data-t="reportTitle"></h1></div>
+  <div class="card"><div class="body">
+    <div class="two"><div><label for="repDate" style="margin-top:0" data-t="date"></label><input id="repDate" type="date"></div>
+      <div><label for="repBy" style="margin-top:0" data-t="basedOn"></label><select id="repBy">
+        <option value="issued_at" data-t="byIssued"></option><option value="handed_over_at" data-t="byHanded"></option>
+        <option value="delivered_at" data-t="byDelivered"></option><option value="collected_at" data-t="byCollected"></option></select></div></div>
+    <div class="sum" id="repSum"></div>
+    <div class="tbl"><table id="repTable"></table></div>
+    <div class="two"><button class="btn primary" id="repXlsx" data-t="exportXlsx"></button><button class="btn" id="repPdf" data-t="exportPdf"></button></div>
+  </div></div>
+</section>
+
+<!-- ================= ULD ================= -->
+<section data-view="uld" hidden id="uldView"><div class="top"><h1>ULD</h1></div><p class="banner" data-t="uldSoon"></p></section>
+
+<!-- ================= TEAM ================= -->
+<section data-view="team" hidden>
+  <div class="top"><h1 data-t="team"></h1></div>
+  <div class="card"><div class="body">
+    <p style="margin-top:0;color:var(--mut)" data-t="teamText"></p>
+    <div data-t="yourCode" style="color:var(--mut);font-weight:600"></div>
+    <div class="code" id="tCode"></div>
+    <button class="btn small" id="tNewCode" data-t="newCode"></button>
+    <div id="tMembers" style="margin-top:12px"></div>
+  </div></div>
+  <div class="card"><div class="body">
+    <h2 style="margin:0" data-t="usageThisMonth"></h2>
+    <div class="sum" id="tUsage"></div>
+    <p class="msg" id="tPrice"></p>
+  </div></div>
+  <div class="card"><div class="body">
+    <h2 style="margin:0" data-t="companyDetails"></h2>
+    <label for="cName" data-t="companyName"></label><input id="cName">
+    <label for="cMail" data-t="billingEmail"></label><input id="cMail" type="email">
+    <label for="cVat" data-t="vat"></label><input id="cVat">
+    <label for="cAddr" data-t="address"></label><textarea id="cAddr" style="min-height:80px"></textarea>
+    <button class="btn primary" id="cSave" data-t="saveDetails"></button><div class="msg" id="cMsg"></div>
+  </div></div>
+</section>
+
+<!-- ================= SETTINGS ================= -->
+<section data-view="settings" hidden>
+  <div class="top"><h1 data-t="settings"></h1></div>
+  <div class="card"><div class="body">
+    <p style="margin-top:0;color:var(--mut)"><span data-t="signedInAs"></span> <b id="sEmail"></b></p>
+    <label for="sName" data-t="name"></label><input id="sName">
+    <label for="sLang" data-t="language"></label><select id="sLang"></select>
+    <button class="btn primary" id="sSave" data-t="saveSettings"></button><div class="msg" id="sMsg"></div>
+    <button class="btn" id="sLogout" data-t="logout"></button>
+  </div></div>
+</section>
+</main>
+<datalist id="dl_wh"><option>DNATA</option><option>WFS</option><option>SWISSPORT</option><option>KLM</option></datalist>
+
+<script src="/ef.js"></script>
+<script src="/noa-parse.js"></script>
+<script>
+let ME=null,rows=[],drivers=[],cur=null,pending=null,srcPath=null,tab="noa";
+const F=["noa_ref","awb","flight","arrival_date","boxes","weight","uld","loose","warehouse","handler_ref","driver","instructions","collected_boxes"];
+const REQ=["awb","flight","arrival_date","boxes","weight","warehouse","driver","instructions"];
+const LBL={noa_ref:"fNoaRef",awb:"fAwb",flight:"fFlight",arrival_date:"fArrival",boxes:"fBoxes",weight:"fWeight",uld:"fUld",loose:"fLoose",warehouse:"fWarehouse",handler_ref:"fHandlerRef",driver:"fDriver",instructions:"fInstr",collected_boxes:"boxesCollected"};
+async function rpc(fn,args){const {data,error}=await sb.rpc(fn,args||{});if(error)throw error;return data}
+const errMsg=e=>e?.code==="40001"?t("conflict"):e?.code==="42501"?t("noCompany"):t("notSaved");
+
+// ---------- start ----------
+async function start(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){location.href="/";return}
+  let bad=false;
+  try{ME=await rpc("ef_onboard")}catch(e){ME=await rpc("ef_me").catch(()=>null);bad=e?.code==="P0002"}
+  if(ME?.member?.lang&&ME.member.lang!==LANG)setLang(ME.member.lang);else applyI18n();
+  if(!ME?.member)return gate(bad?"badCode":"noCompany",true);
+  if(!ME.company?.active)return gate("inactive");
+  if(!ME.member.approved)return gate("pending");
+  $("#gate").hidden=true;$("#bar").hidden=false;$("#main").hidden=false;
+  $("#coName").textContent=ME.company.name;
+  $('[data-tab="team"]').hidden=ME.member.role!=="admin";$('[data-tab="admin"]').hidden=!ME.super;
+  go(location.hash.slice(1)||"noa");
+  await loadNoa();subscribe();
+}
+function gate(k,canJoin){$("#gate").hidden=false;$("#bar").hidden=true;$("#main").hidden=true;$("#gateMsg").textContent=t(k);$("#gateJoin").hidden=!canJoin;applyI18n()}
+$("#gJoin").onclick=async()=>{try{ME=await rpc("ef_join",{code:$("#gCode").value});start()}catch(e){$("#gErr").textContent=t(e?.code==="P0002"?"badCode":"notSaved")}};
+$("#gCreate").onclick=async()=>{if(!$("#gCompany").value.trim())return;try{ME=await rpc("ef_create_company",{cname:$("#gCompany").value});start()}catch{$("#gErr").textContent=t("notSaved")}};
+$("#gLogout").onclick=$("#sLogout").onclick=async()=>{await sb.auth.signOut();location.href="/"};
+
+function go(x){
+  if(x==="admin"){location.href="/admin.html";return}
+  if(!["noa","uld","team","settings"].includes(x)||(x==="team"&&ME.member.role!=="admin"))x="noa";
+  tab=x;history.replaceState(null,"","#"+x);
+  $$("#tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===x?"page":"false"));
+  $$("[data-view]").forEach(s=>s.hidden=s.dataset.view!==x);
+  if(x==="noa")showNoa("noaList");
+  if(x==="team")loadTeam();
+  if(x==="settings")loadSettings();
+  scrollTo(0,0);
+}
+$("#tabs").onclick=e=>{const b=e.target.closest("[data-tab]");if(b)go(b.dataset.tab)};
+const showNoa=id=>["noaList","noaDetail","noaReport"].forEach(s=>$("#"+s).hidden=s!==id);
+
+// ---------- realtime ----------
+let rt,reloadT;
+function subscribe(){
+  rt=sb.channel("ef-noa").on("postgres_changes",{event:"*",schema:"public",table:"noa_docs"},p=>{
+    clearTimeout(reloadT);reloadT=setTimeout(loadNoa,400);
+    const n=p.new;
+    if(cur&&n?.id===cur.id&&n.updated_at!==cur.updated_at&&!$("#noaDetail").hidden)$("#otherBanner").hidden=false;
+  }).subscribe(s=>{const on=s==="SUBSCRIBED";$("#live").textContent=t(on?"live":"offline");$("#live").classList.toggle("off",!on)});
+}
+$("#reloadBtn").onclick=()=>{const r=rows.find(x=>x.id===cur?.id);if(r)openNoa(r)};
+
+// ---------- NOA list ----------
+async function loadNoa(){
+  try{[rows,drivers]=await Promise.all([rpc("efn_list"),rpc("efn_drivers")]);rows=rows||[];drivers=drivers||[]}catch{}
+  renderList();if(!$("#noaReport").hidden)renderReport();
+}
+const missing=r=>REQ.filter(k=>r[k]==null||String(r[k]).trim()==="");
+function status(r){if(!r)return["draft",t("sDraft"),"DRAFT"];
+  if(!r.collected)return missing(r).length?["draft",t("sIncomplete"),"INCOMPLETE"]:["ok",t("sIssued"),"NOA ISSUED"];
+  return r.collected_boxes!=null&&r.boxes!=null&&r.collected_boxes<r.boxes?["draft",t("sPartial",{c:r.collected_boxes,b:r.boxes}),`PARTIALLY COLLECTED ${r.collected_boxes}/${r.boxes}`]:["ok",t("sCollected"),"COLLECTED"]}
+const tag=r=>{const[c,s]=status(r);return`<span class="tag ${c}">${esc(s)}</span>`};
+function renderList(){
+  const q=$("#q").value.toLowerCase();
+  const list=rows.filter(r=>!q||[r.noa_ref,r.awb,r.flight,r.warehouse,r.driver,r.handler_ref].join(" ").toLowerCase().includes(q));
+  $("#rows").innerHTML=list.length?list.map(r=>`<button class="row" data-id="${r.id}"><b>${esc(r.awb||"—")} ${esc(r.flight||"")}${tag(r)}</b><span>${esc(r.noa_ref)} · ${fmtD(r.arrival_date)} · ${esc(r.warehouse||"")} · ${r.boxes??"–"} ${t("boxes")}${r.uld&&r.uld!=="0"?` · ULD ${esc(r.uld)}`:""}</span></button>`).join(""):`<p style="color:var(--mut)">${t("noNoas")}</p>`;
+}
+$("#q").oninput=renderList;
+$("#rows").onclick=e=>{const b=e.target.closest(".row");if(b)openNoa(rows.find(r=>r.id===b.dataset.id))};
+$("#newBtn").onclick=()=>openNoa(null);
+$("#backBtn").onclick=()=>{cur=null;showNoa("noaList");renderList()};
+
+// ---------- NOA detail ----------
+function fillDrivers(sel){const list=[...drivers];if(sel&&!list.includes(sel))list.push(sel);
+  $("#f_driver").innerHTML=`<option value="">${esc(t("selDriver"))}</option>`+list.map(d=>`<option${d===sel?" selected":""}>${esc(d)}</option>`).join("")+`<option value="__add">${esc(t("addDriver"))}</option>`}
+$("#f_driver").onchange=async e=>{if(e.target.value!=="__add")return;
+  const v=(prompt(t("newDriver"))||"").trim();if(!v){fillDrivers(cur?.driver||"");return}
+  try{await rpc("efn_driver_add",{v});if(!drivers.includes(v))drivers.push(v);drivers.sort((a,b)=>a.localeCompare(b));fillDrivers(v)}catch{fillDrivers(cur?.driver||"")}};
+const dtSet=(k,v)=>$("#t_"+k).value=v?toLocal(new Date(v)):"";
+const dtGet=k=>{const v=$("#t_"+k).value;return v?new Date(v).toISOString():""};
+const durMin=(a,b)=>a&&b?Math.round((new Date(b)-new Date(a))/60000):null;
+function showDur(){const m=durMin(dtGet("handed_over_at"),dtGet("delivered_at"));$("#dur").hidden=m==null;
+  $("#dur").textContent=m==null?"":m<0?t("beforeHand"):`${t("driverTime")}: ${Math.floor(m/60)} h ${pad(m%60)} min`}
+$$("[data-now]").forEach(b=>b.onclick=()=>{$("#t_"+b.dataset.now).value=toLocal(new Date());showDur()});
+["handed_over_at","delivered_at"].forEach(k=>$("#t_"+k).oninput=showDur);
+function checkCol(){const b=+$("#f_boxes").value,c=$("#f_collected_boxes").value,m=$("#colMsg");m.textContent="";
+  if(c===""||!b)return;if(+c>b)m.textContent=t("moreThan",{n:+c-b,b});else if(+c<b)m.textContent=t("stillToCollect",{n:b-+c})}
+$("#f_collected_boxes").oninput=checkCol;$("#f_boxes").oninput=checkCol;
+$("#f_collected").onchange=()=>{if($("#f_collected").checked&&!$("#f_collected_boxes").value)$("#f_collected_boxes").value=$("#f_boxes").value;checkCol()};
+
+function openNoa(r){
+  cur=r;pending=null;srcPath=r?.source_path||null;$("#otherBanner").hidden=true;
+  F.forEach(k=>{if(k!=="driver")$("#f_"+k).value=r?.[k]??""});fillDrivers(r?.driver||"");
+  $("#f_collected").checked=!!r?.collected;checkCol();dtSet("handed_over_at",r?.handed_over_at);dtSet("delivered_at",r?.delivered_at);showDur();
+  $("#dTitle").textContent=r?r.noa_ref:t("newNoa").replace("+","").trim();
+  {const[c,s]=status(r);$("#pill").className="pill "+c;$("#pill").textContent=s}
+  $("#meta").hidden=!r;if(r){$("#issued").textContent=fmtDT(r.issued_at);$("#updated").textContent=fmtDT(r.updated_at)}
+  $("#colRow").hidden=!r?.collected_at;if(r?.collected_at)$("#colAt").textContent=fmtDT(r.collected_at);
+  $("#review").hidden=true;$("#file").value="";$("#exMsg").textContent="";$("#saveMsg").textContent="";
+  $("#srcBtn").hidden=!srcPath;$("#dlBtn").hidden=$("#delBtn").hidden=!r;
+  showNoa("noaDetail");scrollTo(0,0);
+}
+async function save(){
+  const m=$("#saveMsg");m.className="msg";
+  if($("#f_collected").checked&&$("#f_collected_boxes").value===""){m.className="msg err";m.textContent=t("fillCollected");$("#f_collected_boxes").focus();return null}
+  const r={id:cur?.id||"",updated_at:cur?.updated_at||"",collected:$("#f_collected").checked,handed_over_at:dtGet("handed_over_at"),delivered_at:dtGet("delivered_at")};
+  F.forEach(k=>r[k]=$("#f_"+k).value.trim());
+  if(srcPath){r.source_path=srcPath;r.source_name=pending?.source_name||cur?.source_name||""}
+  try{
+    const saved=await rpc("efn_save",{r});
+    rows=[saved,...rows.filter(x=>x.id!==saved.id)].sort((a,b)=>b.issued_at.localeCompare(a.issued_at));
+    renderList();openNoa(saved);
+    const miss=missing(saved);$("#saveMsg").textContent=miss.length?t("stillFill")+miss.map(k=>t(LBL[k])).join(", "):t("saved");
+    return saved;
+  }catch(e){
+    if(e?.code==="40001"){await loadNoa();const r2=rows.find(x=>x.id===cur?.id);if(r2)openNoa(r2);$("#saveMsg").className="msg err";$("#saveMsg").textContent=t("conflict");return null}
+    m.className="msg err";m.textContent=errMsg(e);return null}
+}
+$("#saveBtn").onclick=save;
+$("#saveDlBtn").onclick=async()=>{const s=await save();if(s)noaPdf(s)};
+$("#dlBtn").onclick=()=>cur&&noaPdf(cur);
+$("#delBtn").onclick=async()=>{if(!cur||!confirm(t("confirmDel",{x:cur.noa_ref})))return;
+  try{await rpc("efn_delete",{row_id:cur.id});rows=rows.filter(r=>r.id!==cur.id);cur=null;showNoa("noaList");renderList()}catch{alert(t("notDeleted"))}};
+
+// ---------- upload & extract ----------
+async function fn(body){
+  const {data:{session}}=await sb.auth.getSession();
+  const r=await fetch(`${EF_URL}/functions/v1/noa`,{method:"POST",headers:{apikey:EF_KEY,Authorization:`Bearer ${session?.access_token||EF_KEY}`,"Content-Type":"application/json"},body:JSON.stringify(body)});
+  return {ok:r.ok,d:await r.json().catch(()=>({error:"server"}))};
+}
+const XL=["awb","flight","arrival_date","boxes","weight","uld","loose","warehouse","handler_ref","instructions"];
+function applyPending(){XL.forEach(k=>{const v=pending[k];if(v!==null&&v!==undefined&&v!=="")$("#f_"+k).value=v})}
+$("#extractBtn").onclick=async()=>{
+  const f=$("#file").files[0],m=$("#exMsg");m.className="msg";
+  if(!f){m.className="msg err";m.textContent=t("choose");return}
+  const isPdf=f.type==="application/pdf"||/\.pdf$/i.test(f.name);
+  if(isPdf&&f.size>10e6){m.className="msg err";m.textContent=t("tooBig");return}
+  $("#extractBtn").disabled=true;m.textContent=t("reading");
+  let b64,type="application/pdf";
+  try{if(isPdf)b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(f)});else{b64=await shrink(f);type="image/jpeg"}}
+  catch{$("#extractBtn").disabled=false;m.className="msg err";m.textContent=t("cantOpen");return}
+  let local=null;if(isPdf)try{local=parseNoa(await pdfItems(b64))}catch{}
+  const useLocal=!!(local&&local.awb&&local.boxes);
+  const {ok,d}=await fn({action:"extract",data:b64,type,skip_ai:useLocal});
+  if(useLocal&&ok)d.fields=local;
+  $("#extractBtn").disabled=false;
+  if(d.source_path){srcPath=d.source_path;$("#srcBtn").hidden=false}
+  if(!ok){const k={notpdf:"eNotpdf",type:"eType",nokey:"eNokey",ai:"eAi",parse:"eAi"}[d.error]||"eUpload";
+    m.className="msg err";m.textContent=t(k);
+    if(!cur&&d.source_path){pending={source_name:f.name};const txt=m.textContent;await save();$("#exMsg").className="msg err";$("#exMsg").textContent=txt+" "+t("savedAnyway")}
+    return}
+  pending={...(d.fields||{}),source_name:f.name};
+  if(!cur){applyPending();await save();$("#exMsg").textContent=t("createdFromDoc");return}
+  $("#revTable").innerHTML=XL.map(k=>`<tr><td>${esc(t(LBL[k]))}</td><td>${esc(k==="arrival_date"?fmtD(pending[k]):pending[k]??"")||`<i style="color:var(--mut)">${t("notFound")}</i>`}</td></tr>`).join("");
+  $("#review").hidden=false;m.textContent=t("checkApply");
+};
+$("#applyBtn").onclick=()=>{applyPending();$("#review").hidden=true;$("#exMsg").textContent=t("applied")};
+$("#discardBtn").onclick=()=>{pending=null;$("#review").hidden=true;$("#exMsg").textContent=""};
+$("#srcBtn").onclick=async()=>{const w=window.open("","_blank");const {ok,d}=await fn({action:"source",path:srcPath});if(ok&&w)w.location=d.url;else w&&w.close()};
+function shrink(f){return new Promise((res,rej)=>{const u=URL.createObjectURL(f),i=new Image();
+  i.onload=()=>{const k=Math.min(1,2000/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);
+    c.getContext("2d").drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL("image/jpeg",.85).split(",")[1])};
+  i.onerror=()=>{URL.revokeObjectURL(u);rej()};i.src=u})}
+if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+async function pdfItems(b64){const data=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));const doc=await pdfjsLib.getDocument({data}).promise;const items=[];
+  for(let p=1;p<=doc.numPages;p++){const c=await (await doc.getPage(p)).getTextContent();items.push(...c.items.map(i=>({s:i.str,x:i.transform[4],y:i.transform[5]-p*2000})))}return items}
+
+// ---------- NOA PDF (English, official) ----------
+async function noaPdf(r){
+  const {PDFDocument,StandardFonts,rgb}=PDFLib;const doc=await PDFDocument.create(),pg=doc.addPage([595.28,841.89]);
+  const fo=await doc.embedFont(StandardFonts.Helvetica),fb=await doc.embedFont(StandardFonts.HelveticaBold);
+  const navy=rgb(.06,.1,.2),mut=rgb(.3,.35,.45),line=rgb(.84,.86,.91),W=595.28,M=48;
+  const clean=s=>String(s??"").replace(/[^\x20-\x7E\xA0-\xFF\n]/g,"-");
+  pg.drawRectangle({x:0,y:841.89-120,width:W,height:120,color:rgb(.08,.13,.26)});
+  pg.drawText(clean(ME.company.name).toUpperCase()+"  |  WAREHOUSE DOCUMENT",{x:M,y:780,size:9,font:fb,color:rgb(1,.7,.42)});
+  pg.drawText("Notification of Arrival (NOA)",{x:M,y:750,size:22,font:fb,color:rgb(1,1,1)});
+  pg.drawText(clean(r.noa_ref),{x:M,y:730,size:11,font:fo,color:rgb(.78,.82,.9)});
+  const m=durMin(r.handed_over_at,r.delivered_at);
+  const items=[["AWB",r.awb],["Flight Number",r.flight],["Arrival Date",fmtDpdf(r.arrival_date)],["Boxes",r.boxes],["ULD",r.uld&&r.uld!=="0"?r.uld:""],["Loose",r.loose??""],
+    ["Weight (kg)",r.weight!=null?Number(r.weight).toLocaleString("nl-NL",{minimumFractionDigits:3}):""],["Warehouse",r.warehouse],["Handler NOA No.",r.handler_ref],["Assigned Driver",r.driver],
+    ["Status",status(r)[2]],["Boxes collected",r.collected_boxes??""],["Collected at",fmtDTpdf(r.collected_at)],["Handed over to driver",fmtDTpdf(r.handed_over_at)],
+    ["Delivered at facility",fmtDTpdf(r.delivered_at)],["Driver time",m!=null&&m>=0?`${Math.floor(m/60)} h ${pad(m%60)} min`:""]];
+  let y=690;
+  for(const [k,v] of items){pg.drawText(k,{x:M,y,size:10,font:fb,color:mut});pg.drawText(clean(v),{x:200,y,size:12,font:k==="AWB"?fb:fo,color:navy});y-=10;pg.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:.6,color:line});y-=17}
+  pg.drawText("Collection Instructions",{x:M,y,size:10,font:fb,color:mut});y-=17;
+  let ln="";const flush=()=>{pg.drawText(ln.trim(),{x:M,y,size:11,font:fo,color:navy});y-=15;ln=""};
+  for(const w of clean(r.instructions).split(/(\s+)/)){if(w.includes("\n")){flush();continue}if(fo.widthOfTextAtSize(ln+w,11)>W-2*M)flush();ln+=w}if(ln.trim())flush();
+  y-=10;pg.drawText(`Issued: ${fmtDTpdf(r.issued_at)}    Last updated: ${fmtDTpdf(r.updated_at)}`,{x:M,y,size:9,font:fo,color:mut});
+  pg.drawText("Signature driver",{x:M,y:100,size:10,font:fb,color:mut});pg.drawLine({start:{x:M,y:80},end:{x:250,y:80},thickness:.8,color:line});
+  pg.drawText("Signature warehouse",{x:330,y:100,size:10,font:fb,color:mut});pg.drawLine({start:{x:330,y:80},end:{x:W-M,y:80},thickness:.8,color:line});
+  pg.drawText("e-freight.nl",{x:M,y:40,size:8,font:fo,color:mut});
+  download(new Blob([await doc.save()],{type:"application/pdf"}),`${r.noa_ref}.pdf`);
+}
+
+// ---------- daily report ----------
+const dayOf=ts=>ts?toLocal(new Date(ts)).slice(0,10):"",hm=ts=>ts?toLocal(new Date(ts)).slice(11):"";
+function repRows(){const d=$("#repDate").value,by=$("#repBy").value;
+  return rows.filter(r=>dayOf(r[by])===d).sort((a,b)=>String(a[by]).localeCompare(String(b[by]))).map(r=>{const m=durMin(r.handed_over_at,r.delivered_at);
+    return{...r,arrival:fmtD(r.arrival_date),handed:dayOf(r.handed_over_at)===d?hm(r.handed_over_at):fmtDT(r.handed_over_at),
+      delivered:dayOf(r.delivered_at)===d?hm(r.delivered_at):fmtDT(r.delivered_at),mins:m,dur:m==null?"":m<0?"!":`${Math.floor(m/60)}:${pad(m%60)}`,
+      st:status(r)[1],stEn:status(r)[2],weight:r.weight!=null?Number(r.weight):null}})}
+const COLS=()=>[[t("fNoaRef"),"noa_ref"],[t("fAwb"),"awb"],[t("fFlight"),"flight"],[t("fArrival"),"arrival"],[t("fWarehouse"),"warehouse"],[t("fHandlerRef"),"handler_ref"],
+  [t("fBoxes"),"boxes",1],[t("boxesCollected"),"collected_boxes",1],[t("fWeight"),"weight",1],[t("fUld"),"uld"],[t("fLoose"),"loose",1],[t("fDriver"),"driver"],
+  [t("handedOver"),"handed"],[t("delivered"),"delivered"],[t("driverTime"),"dur"],[t("status"),"st"]];
+let repSum=[];
+function renderReport(){const R=repRows(),sum=k=>R.reduce((a,r)=>a+(Number(r[k])||0),0);
+  const ms=R.map(r=>r.mins).filter(m=>m!=null&&m>=0),avg=ms.length?Math.round(ms.reduce((a,b)=>a+b,0)/ms.length):null;
+  repSum=[[R.length,t("tNoas"),"NOAs"],[sum("boxes"),t("fBoxes"),"Boxes"],[sum("collected_boxes"),t("boxesCollected"),"Collected"],
+    [sum("weight").toLocaleString("nl-NL",{maximumFractionDigits:1}),t("fWeight"),"Weight kg"],[R.filter(r=>r.collected).length,t("tCollectedNoas"),"Collected NOAs"],
+    [avg==null?"–":`${Math.floor(avg/60)}:${pad(avg%60)}`,t("tAvg"),"Avg driver time"]];
+  $("#repSum").innerHTML=repSum.map(([v,l])=>`<div><b>${v}</b><span>${esc(l)}</span></div>`).join("");
+  const C=COLS();
+  $("#repTable").innerHTML=`<tr>${C.map(c=>`<th${c[2]?' class="n"':""}>${esc(c[0])}</th>`).join("")}</tr>`+(R.length?R.map(r=>`<tr data-id="${r.id}" style="cursor:pointer">${C.map(c=>`<td${c[2]?' class="n"':""}>${esc(c[1]==="weight"&&r.weight!=null?r.weight.toLocaleString("nl-NL",{minimumFractionDigits:1}):r[c[1]]??"")}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${C.length}" style="color:var(--mut)">${esc(t("noasOn"))}</td></tr>`);
+  return R}
+$("#repBtn").onclick=()=>{if(!$("#repDate").value)$("#repDate").value=toLocal(new Date()).slice(0,10);showNoa("noaReport");renderReport()};
+$("#repBack").onclick=()=>{showNoa("noaList");renderList()};
+$("#repDate").onchange=renderReport;$("#repBy").onchange=renderReport;
+$("#repTable").onclick=e=>{const tr=e.target.closest("tr[data-id]");if(tr)openNoa(rows.find(r=>r.id===tr.dataset.id))};
+const repName=()=>`NOA-report_${$("#repDate").value}_${$("#repBy").value.replace("_at","")}`;
+$("#repXlsx").onclick=()=>{const R=renderReport(),C=COLS();
+  const data=[[`${t("reportTitle")} – ${fmtD($("#repDate").value)} – ${t("basedOn")}: ${$("#repBy").selectedOptions[0].text}`],[],C.map(c=>c[0]),...R.map(r=>C.map(c=>r[c[1]]??"")),[],...repSum.map(([v,l])=>[l,v])];
+  const ws=XLSX.utils.aoa_to_sheet(data);ws["!cols"]=C.map(c=>({wch:Math.max(String(c[0]).length+2,c[1]==="driver"?24:c[1]==="awb"?14:10)}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"NOA");XLSX.writeFile(wb,repName()+".xlsx")};
+$("#repPdf").onclick=async()=>{const R=renderReport();const {PDFDocument,StandardFonts,rgb}=PDFLib;
+  const doc=await PDFDocument.create(),fo=await doc.embedFont(StandardFonts.Helvetica),fb=await doc.embedFont(StandardFonts.HelveticaBold);
+  const W=841.89,H=595.28,M=28,clean=s=>String(s??"").replace(/[^\x20-\x7E\xA0-\xFF]/g,"-");
+  const byEn={issued_at:"NOA issued",handed_over_at:"Handed over to driver",delivered_at:"Delivered at facility",collected_at:"Collected"}[$("#repBy").value];
+  const P=[["NOA Ref","noa_ref",88],["AWB","awb",62],["Flight","flight",40],["Arrival","arr",56],["WH","warehouse",36],["Boxes","boxes",30,1],["Coll.","collected_boxes",30,1],
+    ["Kg","weight",42,1],["ULD","uld",34],["Driver","driver",118],["Handed","handed",62],["Delivered","delivered",62],["Time","dur",30],["Status","stEn",94]];
+  let pg,y;const fit=(s,w,f,z)=>{s=clean(s);while(s&&f.widthOfTextAtSize(s,z)>w-4)s=s.slice(0,-1);return s};
+  const head=()=>{pg=doc.addPage([W,H]);y=H-M;pg.drawText(fit(`${clean(ME.company.name)} - NOA daily report - ${fmtDpdf($("#repDate").value)} - based on: ${byEn}`,W,fb,14),{x:M,y:y-12,size:14,font:fb});
+    y-=36;let x=M;pg.drawRectangle({x:M,y:y-5,width:W-2*M,height:18,color:rgb(.93,.94,.97)});
+    for(const c of P){pg.drawText(c[0],{x:c[3]?x+c[2]-4-fb.widthOfTextAtSize(c[0],8):x+2,y,size:8,font:fb,color:rgb(.3,.35,.45)});x+=c[2]}y-=18};
+  head();
+  for(const r of R){if(y<M+40)head();let x=M;const rr={...r,arr:fmtDpdf(r.arrival_date),handed:r.handed&&r.handed.length>5?fmtDTpdf(r.handed_over_at):r.handed,delivered:r.delivered&&r.delivered.length>5?fmtDTpdf(r.delivered_at):r.delivered};
+    for(const c of P){const v=c[1]==="weight"&&r.weight!=null?r.weight.toLocaleString("nl-NL",{minimumFractionDigits:1}):rr[c[1]]??"";const s=fit(v,c[2],fo,8);
+      pg.drawText(s,{x:c[3]?x+c[2]-4-fo.widthOfTextAtSize(s,8):x+2,y,size:8,font:fo});x+=c[2]}
+    y-=6;pg.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:.4,color:rgb(.84,.86,.91)});y-=11}
+  if(!R.length){pg.drawText("No NOAs on this date.",{x:M,y,size:10,font:fo});y-=14}
+  y-=10;if(y<M+20)head();pg.drawText(fit("Totals: "+repSum.map(([v,,en])=>`${en}: ${v}`).join("  |  "),W-2*M,fb,9),{x:M,y,size:9,font:fb});
+  download(new Blob([await doc.save()],{type:"application/pdf"}),repName()+".pdf")};
+
+// ---------- team ----------
+async function loadTeam(){
+  try{
+    const [c,ms,u]=await Promise.all([rpc("ef_company_get"),rpc("ef_members_list"),rpc("ef_usage_mine",{p_month:toLocal(new Date()).slice(0,10)})]);
+    $("#tCode").textContent=c.join_code;$("#cName").value=c.name||"";$("#cMail").value=c.billing_email||"";$("#cVat").value=c.vat_number||"";$("#cAddr").value=c.address||"";
+    const eur=n=>Number(n).toLocaleString(LOCALE(),{minimumFractionDigits:2});
+    $("#tUsage").innerHTML=`<div><b>${u.uld}</b><span>ULD</span></div><div><b>${u.noa}</b><span>NOA</span></div>`+(c.free?"":`<div><b>€ ${eur(u.uld*c.price_uld+u.noa*c.price_noa)}</b><span>excl. btw/VAT</span></div>`);
+    $("#tPrice").textContent=c.free?t("freeNote"):t("priceNote",{u:eur(c.price_uld),n:eur(c.price_noa)});
+    $("#tMembers").innerHTML=(ms||[]).map(m=>`<div class="mem" data-uid="${m.user_id}"><div><b>${esc(m.name||m.email)}</b><span>${esc(m.email)} · ${t(m.role)}${m.approved?"":" · "+t("waiting")}</span></div>
+      <div>${m.user_id===ME.user_id?"":(m.approved?`<button class="btn small" data-act="block">${t("block")}</button>`:`<button class="btn small primary" data-act="approve">${t("approve")}</button>`)+
+        `<button class="btn small" data-act="${m.role==="admin"?"user":"admin"}">${t(m.role==="admin"?"makeUser":"makeAdmin")}</button><button class="btn small danger" data-act="remove">${t("remove")}</button>`}</div></div>`).join("");
+    $("#tMembers")._ms=ms;
+  }catch{}
+}
+$("#tMembers").onclick=async e=>{const b=e.target.closest("[data-act]");if(!b)return;const uid=b.closest("[data-uid]").dataset.uid,m=$("#tMembers")._ms.find(x=>x.user_id===uid),a=b.dataset.act;
+  try{if(a==="remove"){if(!confirm(t("confirmDel",{x:m.name||m.email})))return;await rpc("ef_member_remove",{uid})}
+    else await rpc("ef_member_set",{uid,p_approved:a==="approve"?true:a==="block"?false:m.approved,p_role:a==="admin"?"admin":a==="user"?"user":m.role});loadTeam()}catch{alert(t("notSaved"))}};
+$("#tNewCode").onclick=async()=>{if(!confirm(t("newCodeConfirm")))return;try{$("#tCode").textContent=await rpc("ef_new_code")}catch{}};
+$("#cSave").onclick=async()=>{try{const c=await rpc("ef_company_update",{d:{name:$("#cName").value,billing_email:$("#cMail").value.trim(),vat_number:$("#cVat").value.trim(),address:$("#cAddr").value.trim()}});
+  $("#coName").textContent=c.name;ME.company.name=c.name;$("#cMsg").textContent=t("saved")}catch{$("#cMsg").textContent=t("notSaved")}};
+
+// ---------- settings ----------
+function loadSettings(){$("#sEmail").textContent=ME.email;$("#sName").value=ME.member.name||"";
+  $("#sLang").innerHTML=Object.entries(LANGS).map(([k,v])=>`<option value="${k}"${k===LANG?" selected":""}>${v}</option>`).join("");$("#sMsg").textContent=""}
+$("#sSave").onclick=async()=>{try{ME=await rpc("ef_set_profile",{p_name:$("#sName").value,p_lang:$("#sLang").value});setLang(ME.member.lang);
+  renderList();if(cur&&!$("#noaDetail").hidden)openNoa(cur);loadSettings();$("#sMsg").textContent=t("settingsSaved")}catch{$("#sMsg").textContent=t("notSaved")}};
+
+sb.auth.onAuthStateChange(e=>{if(e==="SIGNED_OUT")location.href="/"});
+start();
+</script>
+</body>
+</html>
