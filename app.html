@@ -156,6 +156,8 @@
   </div></div>
   <div class="card"><div class="body">
     <h2 style="margin:0" data-t="companyDetails"></h2>
+    <label data-t="modules"></label>
+    <div class="two"><label class="check" for="cUld"><input type="checkbox" id="cUld"> <span data-t="modUld"></span></label><label class="check" for="cNoa"><input type="checkbox" id="cNoa"> <span data-t="modNoa"></span></label></div>
     <label for="cName" data-t="companyName"></label><input id="cName">
     <label for="cMail" data-t="billingEmail"></label><input id="cMail" type="email">
     <label for="cVat" data-t="vat"></label><input id="cVat">
@@ -200,9 +202,10 @@ async function start(){
   if(!ME.member.approved)return gate("pending");
   $("#gate").hidden=true;$("#bar").hidden=false;$("#main").hidden=false;
   $("#coName").textContent=ME.company.name;
-  $('[data-tab="team"]').hidden=ME.member.role!=="admin";$('[data-tab="admin"]').hidden=!ME.super;
+  $('[data-tab="team"]').hidden=ME.member.role!=="admin";
+  $('[data-tab="noa"]').hidden=!ME.company.mod_noa;$('[data-tab="uld"]').hidden=!ME.company.mod_uld;$('[data-tab="admin"]').hidden=!ME.super;
   go(location.hash.slice(1)||"noa");
-  await loadNoa();subscribe();
+  if(ME.company.mod_noa){await loadNoa();subscribe()}
 }
 function gate(k,canJoin){$("#gate").hidden=false;$("#bar").hidden=true;$("#main").hidden=true;$("#gateMsg").textContent=t(k);$("#gateJoin").hidden=!canJoin;applyI18n()}
 $("#gJoin").onclick=async()=>{try{ME=await rpc("ef_join",{code:$("#gCode").value});start()}catch(e){$("#gErr").textContent=t(e?.code==="P0002"?"badCode":"notSaved")}};
@@ -211,7 +214,8 @@ $("#gLogout").onclick=$("#sLogout").onclick=async()=>{await sb.auth.signOut();lo
 
 function go(x){
   if(x==="admin"){location.href="/admin.html";return}
-  if(!["noa","uld","team","settings"].includes(x)||(x==="team"&&ME.member.role!=="admin"))x="noa";
+  const first=ME.company.mod_noa?"noa":"uld";
+  if(!["noa","uld","team","settings"].includes(x)||(x==="team"&&ME.member.role!=="admin")||(x==="noa"&&!ME.company.mod_noa)||(x==="uld"&&!ME.company.mod_uld))x=first;
   tab=x;history.replaceState(null,"","#"+x);
   $$("#tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===x?"page":"false"));
   $$("[data-view]").forEach(s=>s.hidden=s.dataset.view!==x);
@@ -428,7 +432,7 @@ $("#repPdf").onclick=async()=>{const R=renderReport();const {PDFDocument,Standar
 async function loadTeam(){
   try{
     const [c,ms,u]=await Promise.all([rpc("ef_company_get"),rpc("ef_members_list"),rpc("ef_usage_mine",{p_month:toLocal(new Date()).slice(0,10)})]);
-    $("#tCode").textContent=c.join_code;$("#cName").value=c.name||"";$("#cMail").value=c.billing_email||"";$("#cVat").value=c.vat_number||"";$("#cAddr").value=c.address||"";
+    $("#tCode").textContent=c.join_code;$("#cName").value=c.name||"";$("#cMail").value=c.billing_email||"";$("#cVat").value=c.vat_number||"";$("#cAddr").value=c.address||"";$("#cUld").checked=c.mod_uld;$("#cNoa").checked=c.mod_noa;
     const eur=n=>Number(n).toLocaleString(LOCALE(),{minimumFractionDigits:2});
     $("#tUsage").innerHTML=`<div><b>${u.uld}</b><span>ULD</span></div><div><b>${u.noa}</b><span>NOA</span></div>`+(c.free?"":`<div><b>€ ${eur(u.uld*c.price_uld+u.noa*c.price_noa)}</b><span>excl. btw/VAT</span></div>`);
     $("#tPrice").textContent=c.free?t("freeNote"):t("priceNote",{u:eur(c.price_uld),n:eur(c.price_noa)});
@@ -442,8 +446,10 @@ $("#tMembers").onclick=async e=>{const b=e.target.closest("[data-act]");if(!b)re
   try{if(a==="remove"){if(!confirm(t("confirmDel",{x:m.name||m.email})))return;await rpc("ef_member_remove",{uid})}
     else await rpc("ef_member_set",{uid,p_approved:a==="approve"?true:a==="block"?false:m.approved,p_role:a==="admin"?"admin":a==="user"?"user":m.role});loadTeam()}catch{alert(t("notSaved"))}};
 $("#tNewCode").onclick=async()=>{if(!confirm(t("newCodeConfirm")))return;try{$("#tCode").textContent=await rpc("ef_new_code")}catch{}};
-$("#cSave").onclick=async()=>{try{const c=await rpc("ef_company_update",{d:{name:$("#cName").value,billing_email:$("#cMail").value.trim(),vat_number:$("#cVat").value.trim(),address:$("#cAddr").value.trim()}});
-  $("#coName").textContent=c.name;ME.company.name=c.name;$("#cMsg").textContent=t("saved")}catch{$("#cMsg").textContent=t("notSaved")}};
+$("#cSave").onclick=async()=>{if(!$("#cUld").checked&&!$("#cNoa").checked){$("#cMsg").textContent=t("pickModule");return}
+  try{const c=await rpc("ef_company_update",{d:{mod_uld:$("#cUld").checked,mod_noa:$("#cNoa").checked,name:$("#cName").value,billing_email:$("#cMail").value.trim(),vat_number:$("#cVat").value.trim(),address:$("#cAddr").value.trim()}});
+  $("#coName").textContent=c.name;ME.company.name=c.name;$("#cMsg").textContent=t("saved");
+  if(c.mod_uld!==ME.company.mod_uld||c.mod_noa!==ME.company.mod_noa)setTimeout(()=>location.reload(),600)}catch{$("#cMsg").textContent=t("notSaved")}};
 
 // ---------- settings ----------
 function loadSettings(){$("#sEmail").textContent=ME.email;$("#sName").value=ME.member.name||"";
