@@ -25,6 +25,7 @@ function parseNoa(items){
   const loc=val("Storage Location"),uldl=val("ULD Location"),rem=val("Remarks");
   const ST={V7:"Vrachtstation 7, Valkweg 1, 1118 EC Schiphol",V8:"Vrachtstation 8, Anchoragelaan 50, 1118 LE Schiphol",V9:"Vrachtstation 9, Anchoragelaan 38, 1118 LE Schiphol"};
   const parts=[];
+  if(loc)f.pickup_location=loc.toUpperCase();
   if(loc)parts.push(`Storage location ${loc}`+(ST[loc.toUpperCase()]?` - ${ST[loc.toUpperCase()]}`:""));
   if(uldl)parts.push(`ULD location ${uldl}`);if(rem)parts.push(`Remarks: ${rem}`);
   if(parts.length)f.instructions=parts.join("\n");

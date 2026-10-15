@@ -177,7 +177,8 @@ dialog label{margin:10px 0 4px;font-size:13px}
       <div class="two"><div><label for="f_uld" data-t="fUld"></label><input id="f_uld" placeholder="1 / PMC12345KL"></div>
         <div><label for="f_loose" data-t="fLoose"></label><input id="f_loose" type="number" min="0" step="1" inputmode="numeric"></div></div>
       <div class="two"><div><label for="f_warehouse" data-t="fWarehouse"></label><input id="f_warehouse" list="dl_wh"></div>
-        <div><label for="f_handler_ref" data-t="fHandlerRef"></label><input id="f_handler_ref"></div></div>
+        <div><label for="f_pickup_location" data-t="fPickup"></label><input id="f_pickup_location" list="dl_loc" autocapitalize="characters" style="text-transform:uppercase"></div></div>
+      <label for="f_handler_ref" data-t="fHandlerRef"></label><input id="f_handler_ref">
       <label for="f_driver" data-t="fDriver"></label><select id="f_driver"></select>
       <label for="f_instructions" data-t="fInstr"></label><textarea id="f_instructions"></textarea>
       <div class="sec"><h3 data-t="collection"></h3>
@@ -293,15 +294,16 @@ dialog label{margin:10px 0 4px;font-size:13px}
   <div id="delList" style="max-height:60vh;overflow:auto;margin-top:8px"></div>
   <div class="dbtns"><button class="btn" value="close" data-t="close"></button></div>
 </form></dialog>
+<datalist id="dl_loc"><option>V7</option><option>V8</option><option>T7</option><option>DNATA</option><option>T9</option><option>T11</option><option>T12</option><option>KLM</option></datalist>
 <datalist id="dl_wh"><option>DNATA</option><option>WFS</option><option>SWISSPORT</option><option>KLM</option></datalist>
 
 <script src="/ef.js"></script>
 <script src="/noa-parse.js"></script>
 <script>
 let ME=null,rows=[],drivers=[],cur=null,pending=null,srcPath=null,tab="noa";
-const F=["noa_ref","awb","flight","arrival_date","boxes","weight","uld","loose","warehouse","handler_ref","driver","instructions","collected_boxes"];
+const F=["noa_ref","awb","flight","arrival_date","boxes","weight","uld","loose","warehouse","pickup_location","handler_ref","driver","instructions","collected_boxes"];
 const REQ=["awb","flight","arrival_date","boxes","weight","warehouse","driver","instructions"];
-const LBL={noa_ref:"fNoaRef",awb:"fAwb",flight:"fFlight",arrival_date:"fArrival",boxes:"fBoxes",weight:"fWeight",uld:"fUld",loose:"fLoose",warehouse:"fWarehouse",handler_ref:"fHandlerRef",driver:"fDriver",instructions:"fInstr",collected_boxes:"boxesCollected"};
+const LBL={noa_ref:"fNoaRef",awb:"fAwb",flight:"fFlight",arrival_date:"fArrival",boxes:"fBoxes",weight:"fWeight",uld:"fUld",loose:"fLoose",warehouse:"fWarehouse",pickup_location:"fPickup",handler_ref:"fHandlerRef",driver:"fDriver",instructions:"fInstr",collected_boxes:"boxesCollected"};
 async function rpc(fn,args){const {data,error}=await sb.rpc(fn,args||{});if(error)throw error;return data}
 const errMsg=e=>e?.code==="40001"?t("conflict"):e?.code==="42501"?t("noCompany"):t("notSaved");
 
@@ -368,14 +370,14 @@ const tag=r=>{const[c,s]=status(r);return`<span class="tag ${c}">${esc(s)}</span
 function renderList(){
   const q=$("#q").value.toLowerCase();
   const list=rows.filter(r=>!q||[r.noa_ref,r.awb,r.flight,r.warehouse,r.driver,r.handler_ref].join(" ").toLowerCase().includes(q));
-  const H=[["No.","no"],[t("fNoaRef")],[t("fAwb")],[t("fFlight")],[t("fArrival")],[t("fBoxes")],[t("fWeight")],[t("fUld")],[t("fWarehouse")],[t("fDriver")],[t("status")],[t("boxesCollected")],[t("handedOver")],[t("delivered")],["📎"]];
+  const H=[["No.","no"],[t("fNoaRef")],[t("fAwb")],[t("fFlight")],[t("fArrival")],[t("fBoxes")],[t("fWeight")],[t("fUld")],[t("fWarehouse")],[t("fPickup")],[t("fDriver")],[t("status")],[t("boxesCollected")],[t("handedOver")],[t("delivered")],["📎"]];
   $("#gHead").innerHTML=`<tr>${H.map(h=>`<th${h[1]?` class="${h[1]}"`:""}>${esc(h[0])}</th>`).join("")}</tr>`;
   const age=r=>{const a=r.arrival_date?new Date(r.arrival_date+"T00:00:00"):new Date(r.issued_at),e=r.collected&&r.collected_at?new Date(r.collected_at):new Date();return Math.max(0,Math.floor((e-a)/864e5))+"d"};
   const n=list.length;
   $("#rows").innerHTML=n?list.map((r,i)=>{const[c,st]=status(r);return`<tr data-id="${r.id}">
     <td class="no">${n-i}<br><small>${age(r)}</small></td><td>${esc(r.noa_ref)}</td><td class="awbc">${esc(r.awb||"")}</td><td>${esc(r.flight||"")}</td>
     <td>${fmtD(r.arrival_date)}</td><td class="n">${r.boxes??""}</td><td class="n">${r.weight!=null?Number(r.weight).toLocaleString(LOCALE(),{minimumFractionDigits:1}):""}</td>
-    <td>${esc(r.uld&&r.uld!=="0"?r.uld:"")}</td><td>${esc(r.warehouse||"")}</td><td>${esc(r.driver||"")}</td><td class="st ${c}">${esc(st)}</td>
+    <td>${esc(r.uld&&r.uld!=="0"?r.uld:"")}</td><td>${esc(r.warehouse||"")}</td><td><b>${esc(r.pickup_location||"")}</b></td><td>${esc(r.driver||"")}</td><td class="st ${c}">${esc(st)}</td>
     <td class="n">${r.collected_boxes??""}</td><td>${fmtDT(r.handed_over_at)}</td><td>${fmtDT(r.delivered_at)}</td><td>${r.source_path?"📎":"—"}</td></tr>`}).join("")
     :`<tr><td class="empty" colspan="${H.length}">${esc(t("noNoas"))}</td></tr>`;
 }
@@ -424,17 +426,17 @@ async function save(){
     const saved=await rpc("efn_save",{r});
     rows=[saved,...rows.filter(x=>x.id!==saved.id)].sort((a,b)=>b.issued_at.localeCompare(a.issued_at));
     renderList();openNoa(saved);
-    const miss=missing(saved);$("#saveMsg").textContent=miss.length?t("stillFill")+miss.map(k=>t(LBL[k])).join(", "):t("saved");
+    const miss=missing(saved),txt=miss.length?t("stillFill")+miss.map(k=>t(LBL[k])).join(", "):t("saved");$("#saveMsg").textContent=txt;toast(`✓ ${saved.noa_ref} – ${txt}`,miss.length?"warn":"");
     return saved;
   }catch(e){
-    if(e?.code==="40001"){await loadNoa();const r2=rows.find(x=>x.id===cur?.id);if(r2)openNoa(r2);$("#saveMsg").className="msg err";$("#saveMsg").textContent=t("conflict");return null}
-    m.className="msg err";m.textContent=errMsg(e);return null}
+    if(e?.code==="40001"){await loadNoa();const r2=rows.find(x=>x.id===cur?.id);if(r2)openNoa(r2);$("#saveMsg").className="msg err";$("#saveMsg").textContent=t("conflict");toast(t("conflict"),"err");return null}
+    m.className="msg err";m.textContent=errMsg(e);toast(errMsg(e),"err");return null}
 }
 $("#saveBtn").onclick=save;
 $("#saveDlBtn").onclick=async()=>{const s=await save();if(s)noaPdf(s)};
 $("#dlBtn").onclick=()=>cur&&noaPdf(cur);
 $("#delBtn").onclick=async()=>{if(!cur||!confirm(t("confirmDel",{x:cur.noa_ref})))return;
-  try{await rpc("efn_delete",{row_id:cur.id});rows=rows.filter(r=>r.id!==cur.id);cur=null;showNoa("noaList");renderList()}catch{alert(t("notDeleted"))}};
+  try{await rpc("efn_delete",{row_id:cur.id});toast(`✕ ${cur.noa_ref}`);rows=rows.filter(r=>r.id!==cur.id);cur=null;showNoa("noaList");renderList()}catch{alert(t("notDeleted"))}};
 
 // ---------- upload & extract ----------
 async function fn(body){
@@ -442,7 +444,7 @@ async function fn(body){
   const r=await fetch(`${EF_URL}/functions/v1/noa`,{method:"POST",headers:{apikey:EF_KEY,Authorization:`Bearer ${session?.access_token||EF_KEY}`,"Content-Type":"application/json"},body:JSON.stringify(body)});
   return {ok:r.ok,d:await r.json().catch(()=>({error:"server"}))};
 }
-const XL=["awb","flight","arrival_date","boxes","weight","uld","loose","warehouse","handler_ref","instructions"];
+const XL=["awb","flight","arrival_date","boxes","weight","uld","loose","warehouse","pickup_location","handler_ref","instructions"];
 function applyPending(){XL.forEach(k=>{const v=pending[k];if(v!==null&&v!==undefined&&v!=="")$("#f_"+k).value=v})}
 $("#extractBtn").onclick=async()=>{
   const f=$("#file").files[0],m=$("#exMsg");m.className="msg";
@@ -464,6 +466,7 @@ $("#extractBtn").onclick=async()=>{
     if(!cur&&d.source_path){pending={source_name:f.name};const txt=m.textContent;await save();$("#exMsg").className="msg err";$("#exMsg").textContent=txt+" "+t("savedAnyway")}
     return}
   pending={...(d.fields||{}),source_name:f.name};
+  if(!pending.pickup_location){const m=String(pending.instructions||"").match(/storage location\s*:?\s*([A-Z0-9]{1,6})\b/i);if(m)pending.pickup_location=m[1].toUpperCase()}
   if(!cur){applyPending();await save();$("#exMsg").textContent=t("createdFromDoc");return}
   $("#revTable").innerHTML=XL.map(k=>`<tr><td>${esc(t(LBL[k]))}</td><td>${esc(k==="arrival_date"?fmtD(pending[k]):pending[k]??"")||`<i style="color:var(--mut)">${t("notFound")}</i>`}</td></tr>`).join("");
   $("#review").hidden=false;m.textContent=t("checkApply");
@@ -491,7 +494,7 @@ async function noaPdf(r){
   pg.drawText(clean(r.noa_ref),{x:M,y:730,size:11,font:fo,color:rgb(.78,.82,.9)});
   const m=durMin(r.handed_over_at,r.delivered_at);
   const items=[["AWB",r.awb],["Flight Number",r.flight],["Arrival Date",fmtDpdf(r.arrival_date)],["Boxes",r.boxes],["ULD",r.uld&&r.uld!=="0"?r.uld:""],["Loose",r.loose??""],
-    ["Weight (kg)",r.weight!=null?Number(r.weight).toLocaleString("nl-NL",{minimumFractionDigits:3}):""],["Warehouse",r.warehouse],["Handler NOA No.",r.handler_ref],["Assigned Driver",r.driver],
+    ["Weight (kg)",r.weight!=null?Number(r.weight).toLocaleString("nl-NL",{minimumFractionDigits:3}):""],["Warehouse",r.warehouse],["Pick-up location",r.pickup_location],["Handler NOA No.",r.handler_ref],["Assigned Driver",r.driver],
     ["Status",status(r)[2]],["Boxes collected",r.collected_boxes??""],["Collected at",fmtDTpdf(r.collected_at)],["Handed over to driver",fmtDTpdf(r.handed_over_at)],
     ["Delivered at facility",fmtDTpdf(r.delivered_at)],["Driver time",m!=null&&m>=0?`${Math.floor(m/60)} h ${pad(m%60)} min`:""]];
   let y=690;
@@ -513,7 +516,7 @@ function repRows(){const d=$("#repDate").value,by=$("#repBy").value;
     return{...r,arrival:fmtD(r.arrival_date),handed:dayOf(r.handed_over_at)===d?hm(r.handed_over_at):fmtDT(r.handed_over_at),
       delivered:dayOf(r.delivered_at)===d?hm(r.delivered_at):fmtDT(r.delivered_at),mins:m,dur:m==null?"":m<0?"!":`${Math.floor(m/60)}:${pad(m%60)}`,
       st:status(r)[1],stEn:status(r)[2],weight:r.weight!=null?Number(r.weight):null}})}
-const COLS=()=>[[t("fNoaRef"),"noa_ref"],[t("fAwb"),"awb"],[t("fFlight"),"flight"],[t("fArrival"),"arrival"],[t("fWarehouse"),"warehouse"],[t("fHandlerRef"),"handler_ref"],
+const COLS=()=>[[t("fNoaRef"),"noa_ref"],[t("fAwb"),"awb"],[t("fFlight"),"flight"],[t("fArrival"),"arrival"],[t("fWarehouse"),"warehouse"],[t("fPickup"),"pickup_location"],[t("fHandlerRef"),"handler_ref"],
   [t("fBoxes"),"boxes",1],[t("boxesCollected"),"collected_boxes",1],[t("fWeight"),"weight",1],[t("fUld"),"uld"],[t("fLoose"),"loose",1],[t("fDriver"),"driver"],
   [t("handedOver"),"handed"],[t("delivered"),"delivered"],[t("driverTime"),"dur"],[t("status"),"st"]];
 let repSum=[];
@@ -539,8 +542,8 @@ $("#repPdf").onclick=async()=>{const R=renderReport();const {PDFDocument,Standar
   const doc=await PDFDocument.create(),fo=await doc.embedFont(StandardFonts.Helvetica),fb=await doc.embedFont(StandardFonts.HelveticaBold);
   const W=841.89,H=595.28,M=28,clean=s=>String(s??"").replace(/[^\x20-\x7E\xA0-\xFF]/g,"-");
   const byEn={issued_at:"NOA issued",handed_over_at:"Handed over to driver",delivered_at:"Delivered at facility",collected_at:"Collected"}[$("#repBy").value];
-  const P=[["NOA Ref","noa_ref",88],["AWB","awb",62],["Flight","flight",40],["Arrival","arr",56],["WH","warehouse",36],["Boxes","boxes",30,1],["Coll.","collected_boxes",30,1],
-    ["Kg","weight",42,1],["ULD","uld",34],["Driver","driver",118],["Handed","handed",62],["Delivered","delivered",62],["Time","dur",30],["Status","stEn",94]];
+  const P=[["NOA Ref","noa_ref",88],["AWB","awb",62],["Flight","flight",40],["Arrival","arr",56],["WH","warehouse",36],["Loc","pickup_location",30],["Boxes","boxes",30,1],["Coll.","collected_boxes",30,1],
+    ["Kg","weight",42,1],["ULD","uld",34],["Driver","driver",100],["Handed","handed",62],["Delivered","delivered",62],["Time","dur",30],["Status","stEn",82]];
   let pg,y;const fit=(s,w,f,z)=>{s=clean(s);while(s&&f.widthOfTextAtSize(s,z)>w-4)s=s.slice(0,-1);return s};
   const head=()=>{pg=doc.addPage([W,H]);y=H-M;pg.drawText(fit(`${clean(ME.company.name)} - NOA daily report - ${fmtDpdf($("#repDate").value)} - based on: ${byEn}`,W,fb,14),{x:M,y:y-12,size:14,font:fb});
     y-=36;let x=M;pg.drawRectangle({x:M,y:y-5,width:W-2*M,height:18,color:rgb(.93,.94,.97)});
