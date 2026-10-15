@@ -44,6 +44,71 @@
 .grid td.awbc{font-weight:600}
 .grid td.st{font-weight:600}.grid td.st.ok{background:var(--okbg);color:var(--ok)}.grid td.st.draft{background:var(--draftbg);color:var(--draft)}
 .grid td.empty{color:var(--mut);text-align:center}
+
+/* ===== ULD register ===== */
+#uldView{--whbg:#fff4e0;--wh:#9a5b00;--selbg:#e3ecfb}
+@media (prefers-color-scheme:dark){#uldView{--whbg:#3a2a0c;--wh:#f3c46b;--selbg:#1d2d4d}}
+#uldView .ubar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+#uldView .ubar input,#uldView .ubar select{width:auto;min-height:42px;padding:8px 10px;border-radius:8px}
+#uldView .ubar .grow{flex:1 1 200px}
+#uldView .ubtn{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 12px;min-height:42px}
+#uldView .ubtn.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+#uldView .ubtn.danger{color:var(--warn);border-color:var(--warn)}
+#uldView .ustat{font-size:13px;color:var(--mut)}
+#uldView .selall{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--mut);min-height:42px;margin:0;font-weight:400}
+#uldView input[type=checkbox]{width:20px;height:20px;min-height:0;padding:0;accent-color:var(--blue);cursor:pointer}
+#uBulk{position:sticky;top:calc(env(safe-area-inset-top,0px) + 60px);z-index:5;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#2c55a6;color:#fff;padding:8px 10px;border-radius:8px;margin-bottom:10px}
+#uBulk b{margin-right:auto}#uBulk .ubtn{background:#fff;color:#1f3a68;border-color:#fff}#uBulk .ubtn.danger{color:var(--warn)}
+#uldView .scroll{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}
+#uldView table{border-collapse:collapse;width:100%}
+#uldView thead th{background:#2c55a6;color:#fff;font-size:14px;padding:9px 6px;border:1px solid #1f3a68;white-space:nowrap}
+#uldView td{border:1px solid var(--line);padding:2px}
+#uldView td.no{text-align:center;color:var(--mut);width:44px}
+#uldView td.ck{text-align:center;width:40px}
+#uldView td input:not([type=checkbox]),#uldView td select{width:100%;border:0;background:transparent;color:var(--ink);padding:7px 6px;min-width:90px;min-height:38px;border-radius:0}
+#uldView td input:focus,#uldView td select:focus{outline:2px solid var(--blue);outline-offset:-2px}
+#uldView tr.sel td{background:var(--selbg)}
+#uldView tr.wh td.st{background:var(--whbg)}#uldView tr.wh td.st select{color:var(--wh);font-weight:600}
+#uldView tr.dp td.st{background:var(--okbg)}#uldView tr.dp td.st select{color:var(--ok);font-weight:600}
+#uldView td.del{width:40px;text-align:center}#uldView td.del button{border:0;background:none;color:var(--warn);padding:6px;cursor:pointer;font:inherit}
+#uldView td.cm{white-space:nowrap;text-align:center}#uldView .cmrb{font:inherit;font-size:14px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;min-height:34px;padding:4px 10px}
+#uldView .dash{color:var(--mut);padding:7px 6px;display:inline-block}
+#uldView td.no .nr{display:none}
+#uldView .age{display:inline-block;margin-left:6px;font-size:11px;padding:1px 6px;border-radius:10px;background:var(--soft);color:var(--mut);white-space:nowrap}
+#uldView .age.late{background:#fde2e1;color:#b42318;font-weight:600}#uldView .age.late2{background:#b42318;color:#fff;font-weight:600}
+#uldView tr.late td{background:#fdecea}#uldView tr.late2 td{background:#f9d0cc}
+#uldView tr.late td.no,#uldView tr.late2 td.no{box-shadow:inset 4px 0 0 #b42318}
+#uldView .late-btn{border-color:#b42318;color:#b42318;font-weight:600}#uldView .late-btn.on{background:#b42318;color:#fff}
+@media (prefers-color-scheme:dark){#uldView tr.late td{background:#3a1715}#uldView tr.late2 td{background:#52201c}#uldView .age.late{background:#52201c;color:#ffb4ab}}
+#uldView .uempty{padding:24px;text-align:center;color:var(--mut)}
+@media (max-width:820px){
+  #uldView .scroll{overflow:visible;background:none;border:0}
+  #uldView table,#uldView tbody,#uldView tr,#uldView td{display:block;width:100%}
+  #uldView thead{display:none}
+  #uldView tr{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px}
+  #uldView tr.sel{outline:2px solid var(--blue)}#uldView tr.sel td{background:none}
+  #uldView td{border:0;padding:0}
+  #uldView td::before{content:attr(data-l);display:block;font-size:12px;color:var(--mut);margin-bottom:2px}
+  #uldView td input:not([type=checkbox]),#uldView td select{border:1px solid var(--line);border-radius:8px;padding:8px;min-height:42px;background:var(--bg);min-width:0}
+  #uldView td.no,#uldView td.ck,#uldView td.del{width:auto}
+  #uldView td.no{grid-column:1;text-align:left;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:10px}
+  #uldView td.no::before,#uldView td.ck::before,#uldView td.del::before{display:none}
+  #uldView td.ck{grid-column:2;grid-row:1;display:flex;justify-content:flex-end;align-items:center}#uldView td.ck input{width:26px;height:26px}
+  #uldView td.rm,#uldView td.st{grid-column:1/-1}
+  #uldView tr.wh td.st,#uldView tr.dp td.st{background:none}
+  #uldView tr.wh td.st select{background:var(--whbg)}#uldView tr.dp td.st select{background:var(--okbg)}
+  #uldView td.del{grid-column:1/-1;text-align:right}
+  #uldView td.cm{text-align:left}
+  #uldView td.no .n::before{content:"#"}#uldView td.no .nr{display:inline;font-weight:400;color:var(--mut)}
+  #uldView tr.late,#uldView tr.late2{border:2px solid #b42318}#uldView tr.late td,#uldView tr.late2 td{background:none}
+  #uldView tr.late{background:#fdecea}#uldView tr.late2{background:#f9d0cc}
+  #uldView tr.late td.no,#uldView tr.late2 td.no{box-shadow:none}
+}
+@media (max-width:820px) and (prefers-color-scheme:dark){#uldView tr.late{background:#3a1715}#uldView tr.late2{background:#52201c}}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);width:min(92vw,380px);padding:18px}dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog label{margin:10px 0 4px;font-size:13px}
+.dl-row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}.dl-row small{color:var(--mut)}
+.dbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.dbtns .btn{width:auto;margin:0;padding:8px 16px;min-height:44px}
 .code{font-size:30px;font-weight:700;letter-spacing:.2em;color:var(--ink)}
 </style>
 </head>
@@ -149,7 +214,31 @@
 </section>
 
 <!-- ================= ULD ================= -->
-<section data-view="uld" hidden id="uldView"><div class="top"><h1>ULD</h1></div><p class="banner" data-t="uldSoon"></p></section>
+<section data-view="uld" hidden id="uldView">
+  <div class="top"><h1 data-t="modUld"></h1></div>
+  <div class="live" id="uLive"></div>
+  <div class="ubar">
+    <button class="ubtn primary" id="uAdd" data-t="newRow"></button>
+    <input class="grow" id="uQ" type="search" data-tp="searchUld">
+    <select id="uPer"><option value="7" data-t="per7"></option><option value="14" selected data-t="per14"></option><option value="30" data-t="per30"></option><option value="0" data-t="perAll"></option></select>
+    <select id="uFs"><option value="" data-t="allStatuses"></option><option value="In Warehouse" data-t="stWh"></option><option value="Dispatched" data-t="stDp"></option></select>
+    <button id="uLate" class="ubtn late-btn" hidden></button>
+    <label class="selall"><input type="checkbox" id="uAll"> <span data-t="selectAll"></span></label>
+    <span class="ustat" id="uMode"></span>
+    <button class="ubtn" id="uExp" data-t="exportBtn"></button>
+    <button class="ubtn" id="uDelBtn" data-t="deletedBtn"></button>
+  </div>
+  <div id="uBulk" hidden>
+    <b id="uCnt"></b>
+    <button class="ubtn" id="uCmr" data-t="bCmr"></button>
+    <button class="ubtn" id="uDisp" data-t="bDisp"></button>
+    <button class="ubtn" id="uWh" data-t="bWh"></button>
+    <button class="ubtn danger" id="uDel" data-t="bDel"></button>
+    <button class="ubtn" id="uClr" aria-label="Clear">✕</button>
+  </div>
+  <div id="uHid" class="ustat" style="margin:0 0 8px" hidden></div>
+  <div class="scroll"><table><thead id="uHead"></thead><tbody id="uTb"></tbody></table><div class="uempty" id="uEmpty" hidden data-t="noRows"></div></div>
+</section>
 
 <!-- ================= TEAM ================= -->
 <section data-view="team" hidden>
@@ -171,6 +260,7 @@
     <label data-t="modules"></label>
     <div class="two"><label class="check" for="cUld"><input type="checkbox" id="cUld"> <span data-t="modUld"></span></label><label class="check" for="cNoa"><input type="checkbox" id="cNoa"> <span data-t="modNoa"></span></label></div>
     <label for="cName" data-t="companyName"></label><input id="cName">
+    <label for="cRates" data-t="uldRates"></label><input id="cRates" data-tp="uldRatesHelp">
     <label for="cMail" data-t="billingEmail"></label><input id="cMail" type="email">
     <label for="cVat" data-t="vat"></label><input id="cVat">
     <label for="cAddr" data-t="address"></label><textarea id="cAddr" style="min-height:80px"></textarea>
@@ -190,6 +280,19 @@
   </div></div>
 </section>
 </main>
+<dialog id="carDlg"><form method="dialog">
+  <b data-t="cmrDetails"></b>
+  <label for="carDel" data-t="placeDelivery"></label><input id="carDel" value="Schiphol-Rijk" autocomplete="off">
+  <label for="carTake" data-t="placeTake"></label><input id="carTake" value="Schiphol-Rijk" autocomplete="off">
+  <label for="carName" data-t="carrierOpt"></label><input id="carName" data-tp="driverName" autocomplete="off">
+  <input id="carPlate" data-tp="plate" autocomplete="off" style="margin-top:8px">
+  <div class="dbtns"><button class="btn" value="cancel" formnovalidate data-t="cancel"></button><button class="btn primary" value="ok" data-t="makeCmr"></button></div>
+</form></dialog>
+<dialog id="delDlg" style="width:min(94vw,560px)"><form method="dialog">
+  <b data-t="deletedTitle"></b>
+  <div id="delList" style="max-height:60vh;overflow:auto;margin-top:8px"></div>
+  <div class="dbtns"><button class="btn" value="close" data-t="close"></button></div>
+</form></dialog>
 <datalist id="dl_wh"><option>DNATA</option><option>WFS</option><option>SWISSPORT</option><option>KLM</option></datalist>
 
 <script src="/ef.js"></script>
@@ -231,7 +334,9 @@ function go(x){
   tab=x;history.replaceState(null,"","#"+x);
   $$("#tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===x?"page":"false"));
   $$("[data-view]").forEach(s=>s.hidden=s.dataset.view!==x);
+  $("#main").classList.toggle("wide",x==="uld");
   if(x==="noa")showNoa("noaList");
+  if(x==="uld"&&window.uldOpen)uldOpen();
   if(x==="team")loadTeam();
   if(x==="settings")loadSettings();
   scrollTo(0,0);
@@ -453,7 +558,7 @@ $("#repPdf").onclick=async()=>{const R=renderReport();const {PDFDocument,Standar
 async function loadTeam(){
   try{
     const [c,ms,u]=await Promise.all([rpc("ef_company_get"),rpc("ef_members_list"),rpc("ef_usage_mine",{p_month:toLocal(new Date()).slice(0,10)})]);
-    $("#tCode").textContent=c.join_code;$("#cName").value=c.name||"";$("#cMail").value=c.billing_email||"";$("#cVat").value=c.vat_number||"";$("#cAddr").value=c.address||"";$("#cUld").checked=c.mod_uld;$("#cNoa").checked=c.mod_noa;
+    $("#tCode").textContent=c.join_code;$("#cName").value=c.name||"";$("#cMail").value=c.billing_email||"";$("#cVat").value=c.vat_number||"";$("#cAddr").value=c.address||"";$("#cUld").checked=c.mod_uld;$("#cRates").value=Object.entries(c.uld_rates||{}).map(([k,v])=>`${k}=${v}`).join(", ");$("#cNoa").checked=c.mod_noa;
     const eur=n=>Number(n).toLocaleString(LOCALE(),{minimumFractionDigits:2});
     $("#tUsage").innerHTML=`<div><b>${u.uld}</b><span>ULD</span></div><div><b>${u.noa}</b><span>NOA</span></div>`+(c.free?"":`<div><b>€ ${eur(u.uld*c.price_uld+u.noa*c.price_noa)}</b><span>excl. btw/VAT</span></div>`);
     $("#tPrice").textContent=c.free?t("freeNote"):t("priceNote",{u:eur(c.price_uld),n:eur(c.price_noa)});
@@ -468,7 +573,8 @@ $("#tMembers").onclick=async e=>{const b=e.target.closest("[data-act]");if(!b)re
     else await rpc("ef_member_set",{uid,p_approved:a==="approve"?true:a==="block"?false:m.approved,p_role:a==="admin"?"admin":a==="user"?"user":m.role});loadTeam()}catch{alert(t("notSaved"))}};
 $("#tNewCode").onclick=async()=>{if(!confirm(t("newCodeConfirm")))return;try{$("#tCode").textContent=await rpc("ef_new_code")}catch{}};
 $("#cSave").onclick=async()=>{if(!$("#cUld").checked&&!$("#cNoa").checked){$("#cMsg").textContent=t("pickModule");return}
-  try{const c=await rpc("ef_company_update",{d:{mod_uld:$("#cUld").checked,mod_noa:$("#cNoa").checked,name:$("#cName").value,billing_email:$("#cMail").value.trim(),vat_number:$("#cVat").value.trim(),address:$("#cAddr").value.trim()}});
+  const rates={};$("#cRates").value.split(/[,;\n]+/).forEach(x=>{const m=x.match(/^\s*([A-Za-z]{3})\s*[=:]\s*([\d.,]+)\s*$/);if(m)rates[m[1].toUpperCase()]=parseFloat(m[2].replace(",","."))});
+  try{const c=await rpc("ef_company_update",{d:{uld_rates:rates,mod_uld:$("#cUld").checked,mod_noa:$("#cNoa").checked,name:$("#cName").value,billing_email:$("#cMail").value.trim(),vat_number:$("#cVat").value.trim(),address:$("#cAddr").value.trim()}});
   $("#coName").textContent=c.name;ME.company.name=c.name;$("#cMsg").textContent=t("saved");
   if(c.mod_uld!==ME.company.mod_uld||c.mod_noa!==ME.company.mod_noa)setTimeout(()=>location.reload(),600)}catch{$("#cMsg").textContent=t("notSaved")}};
 
@@ -476,10 +582,11 @@ $("#cSave").onclick=async()=>{if(!$("#cUld").checked&&!$("#cNoa").checked){$("#c
 function loadSettings(){$("#sEmail").textContent=ME.email;$("#sName").value=ME.member.name||"";
   $("#sLang").innerHTML=Object.entries(LANGS).map(([k,v])=>`<option value="${k}"${k===LANG?" selected":""}>${v}</option>`).join("");$("#sMsg").textContent=""}
 $("#sSave").onclick=async()=>{try{ME=await rpc("ef_set_profile",{p_name:$("#sName").value,p_lang:$("#sLang").value});setLang(ME.member.lang);
-  renderList();if(cur&&!$("#noaDetail").hidden)openNoa(cur);loadSettings();$("#sMsg").textContent=t("settingsSaved")}catch{$("#sMsg").textContent=t("notSaved")}};
+  renderList();uldRender();if(cur&&!$("#noaDetail").hidden)openNoa(cur);loadSettings();$("#sMsg").textContent=t("settingsSaved")}catch{$("#sMsg").textContent=t("notSaved")}};
 
 sb.auth.onAuthStateChange(e=>{if(e==="SIGNED_OUT")location.href="/"});
 start();
 </script>
+<script src="/uld.js"></script>
 </body>
 </html>
