@@ -32,6 +32,18 @@
 .gate{max-width:480px;margin:10vh auto;padding:0 16px}
 .mem{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--line);padding:12px 0;flex-wrap:wrap}
 .mem b{display:block}.mem span{color:var(--mut);font-size:14px}
+.grid{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.grid table{border-collapse:collapse;width:100%;font-size:15px;white-space:nowrap}
+.grid th{background:#2c55a6;color:#fff;font-weight:700;padding:10px 12px;text-align:center;position:sticky;top:0;z-index:1}
+.grid td{padding:9px 12px;border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.grid tbody tr{cursor:pointer}.grid tbody tr:hover td{background:var(--soft)}
+.grid td.no{text-align:center;color:var(--mut);position:sticky;left:0;background:var(--card);z-index:1}
+.grid th.no{position:sticky;left:0;z-index:2}
+.grid td.no small{display:inline-block;margin-top:2px;background:var(--soft);border-radius:6px;padding:0 6px;font-size:12px}
+.grid td.n{text-align:right;font-variant-numeric:tabular-nums}
+.grid td.awbc{font-weight:600}
+.grid td.st{font-weight:600}.grid td.st.ok{background:var(--okbg);color:var(--ok)}.grid td.st.draft{background:var(--draftbg);color:var(--draft)}
+.grid td.empty{color:var(--mut);text-align:center}
 .code{font-size:30px;font-weight:700;letter-spacing:.2em;color:var(--ink)}
 </style>
 </head>
@@ -68,7 +80,7 @@
   <div class="top"><h1 data-t="noaRegister"></h1><button class="btn" id="repBtn" data-t="dailyReport"></button><button class="btn primary" id="newBtn" data-t="newNoa"></button></div>
   <div class="live" id="live"></div>
   <input id="q" data-tp="search" style="margin-bottom:14px" type="search">
-  <div id="rows"></div>
+  <div class="grid"><table><thead id="gHead"></thead><tbody id="rows"></tbody></table></div>
 </section>
 
 <section id="noaDetail" data-view="noa" hidden>
@@ -225,7 +237,7 @@ function go(x){
   scrollTo(0,0);
 }
 $("#tabs").onclick=e=>{const b=e.target.closest("[data-tab]");if(b)go(b.dataset.tab)};
-const showNoa=id=>["noaList","noaDetail","noaReport"].forEach(s=>$("#"+s).hidden=s!==id);
+const showNoa=id=>{["noaList","noaDetail","noaReport"].forEach(s=>$("#"+s).hidden=s!==id);$("#main").classList.toggle("wide",id!=="noaDetail")};
 
 // ---------- realtime ----------
 let rt,reloadT;
@@ -251,10 +263,19 @@ const tag=r=>{const[c,s]=status(r);return`<span class="tag ${c}">${esc(s)}</span
 function renderList(){
   const q=$("#q").value.toLowerCase();
   const list=rows.filter(r=>!q||[r.noa_ref,r.awb,r.flight,r.warehouse,r.driver,r.handler_ref].join(" ").toLowerCase().includes(q));
-  $("#rows").innerHTML=list.length?list.map(r=>`<button class="row" data-id="${r.id}"><b>${esc(r.awb||"—")} ${esc(r.flight||"")}${tag(r)}</b><span>${esc(r.noa_ref)} · ${fmtD(r.arrival_date)} · ${esc(r.warehouse||"")} · ${r.boxes??"–"} ${t("boxes")}${r.uld&&r.uld!=="0"?` · ULD ${esc(r.uld)}`:""}</span></button>`).join(""):`<p style="color:var(--mut)">${t("noNoas")}</p>`;
+  const H=[["No.","no"],[t("fNoaRef")],[t("fAwb")],[t("fFlight")],[t("fArrival")],[t("fBoxes")],[t("fWeight")],[t("fUld")],[t("fWarehouse")],[t("fDriver")],[t("status")],[t("boxesCollected")],[t("handedOver")],[t("delivered")],["📎"]];
+  $("#gHead").innerHTML=`<tr>${H.map(h=>`<th${h[1]?` class="${h[1]}"`:""}>${esc(h[0])}</th>`).join("")}</tr>`;
+  const age=r=>{const a=r.arrival_date?new Date(r.arrival_date+"T00:00:00"):new Date(r.issued_at),e=r.collected&&r.collected_at?new Date(r.collected_at):new Date();return Math.max(0,Math.floor((e-a)/864e5))+"d"};
+  const n=list.length;
+  $("#rows").innerHTML=n?list.map((r,i)=>{const[c,st]=status(r);return`<tr data-id="${r.id}">
+    <td class="no">${n-i}<br><small>${age(r)}</small></td><td>${esc(r.noa_ref)}</td><td class="awbc">${esc(r.awb||"")}</td><td>${esc(r.flight||"")}</td>
+    <td>${fmtD(r.arrival_date)}</td><td class="n">${r.boxes??""}</td><td class="n">${r.weight!=null?Number(r.weight).toLocaleString(LOCALE(),{minimumFractionDigits:1}):""}</td>
+    <td>${esc(r.uld&&r.uld!=="0"?r.uld:"")}</td><td>${esc(r.warehouse||"")}</td><td>${esc(r.driver||"")}</td><td class="st ${c}">${esc(st)}</td>
+    <td class="n">${r.collected_boxes??""}</td><td>${fmtDT(r.handed_over_at)}</td><td>${fmtDT(r.delivered_at)}</td><td>${r.source_path?"📎":"—"}</td></tr>`}).join("")
+    :`<tr><td class="empty" colspan="${H.length}">${esc(t("noNoas"))}</td></tr>`;
 }
 $("#q").oninput=renderList;
-$("#rows").onclick=e=>{const b=e.target.closest(".row");if(b)openNoa(rows.find(r=>r.id===b.dataset.id))};
+$("#rows").onclick=e=>{const b=e.target.closest("tr[data-id]");if(b)openNoa(rows.find(r=>r.id===b.dataset.id))};
 $("#newBtn").onclick=()=>openNoa(null);
 $("#backBtn").onclick=()=>{cur=null;showNoa("noaList");renderList()};
 
